@@ -1,0 +1,334 @@
+/* Reset & Global Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+    padding: 20px;
+}
+
+/* Common Elements */
+h1, h2, .title {
+    color: #333;
+    font-size: 24px;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+/* Image Grid Layout */
+.image-grid,
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+/* Grid Items */
+.image-grid-item,
+.library-item {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    margin-top: 50px;
+}
+
+.image-grid-item:hover,
+.library-item:hover {
+    transform: scale(1.05);
+}
+
+.image-grid-item img,
+.library-item img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    border-bottom: 1px solid #ddd;
+    display: block;
+}
+
+/* Login Page Styles */
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 40px 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin: 40px auto;
+}
+
+.login-title {
+    color: #333;
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.login-container .form-group {
+    margin-bottom: 20px;
+}
+
+.login-container .form-group label {
+    display: block;
+    color: #555;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.login-container .form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.login-container .form-group input:focus {
+    border-color: #2196F3;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+    background-color: #1976D2;
+}
+
+.login-btn:active {
+    background-color: #1565C0;
+}
+
+.forgot-password {
+    display: block;
+    text-align: right;
+    color: #2196F3;
+    font-size: 14px;
+    text-decoration: none;
+    margin: 10px 0 20px;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .image-grid,
+    .library-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .image-grid-item img,
+    .library-item img {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .image-grid,
+    .library-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .image-grid-item img,
+    .library-item img {
+        height: 240px;
+    }
+}
+
+@media (max-width: 480px) {
+    .image-grid,
+    .library-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .image-grid-item img,
+    .library-item img {
+        height: 300px;
+    }
+
+    .login-container {
+        margin: 20px;
+        padding: 30px 20px;
+    }
+
+    .login-title {
+        font-size: 24px;
+    }
+}
+
+/* Form Container Styles */
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.upload-form h2 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 10px;
+    text-align: center;
+    position: relative;
+}
+
+/* File Upload Styling */
+.file-upload {
+    position: relative;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-upload:hover {
+    border-color: #2196F3;
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.upload-placeholder span {
+    color: #666;
+    font-size: 14px;
+}
+
+.file-support {
+    color: #888;
+    font-size: 12px;
+}
+
+/* Text Input Styling */
+input[type="text"] {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus {
+    border-color: #2196F3;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+/* Submit Button Styling */
+.submit-btn {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-btn:hover {
+    background-color: #1976D2;
+}
+
+.submit-btn:active {
+    background-color: #1565C0;
+}
+/* Existing styles remain... */
+
+/* File Upload Preview Styles */
+.file-upload.has-file {
+    border-style: solid;
+    border-color: #2196F3;
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
+.file-preview-image {
+    max-width: 100%;
+    max-height: 150px;
+    margin: 10px auto;
+    border-radius: 4px;
+    display: block;
+}
+
+.selected-file-name {
+    color: #2196F3;
+    font-size: 14px;
+    margin-top: 8px;
+    word-break: break-all;
+}
+
+/* Adjust placeholder when file is selected */
+.has-file .upload-placeholder {
+    padding: 10px;
+}
+
+.file-upload.has-file:hover {
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
+/* Make sure the preview maintains aspect ratio */
+.file-preview-image {
+    object-fit: contain;
+}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Photo Store</title>
+</head>
+<body>
+    <h1>Gallery</h1>
+    <div class="image-grid">
+        {% for image in images %}
+        <div class="image-grid-item">
+            <a href="{{ url_for('detail', image_id=image[0]) }}">
+                <img src="{{ url_for('static', filename='uploads/' + image[1]) }}" alt="Image">
+                <!-- <div class="image-title">{{ image[2] }}</div> Tên hoặc thông tin chủ sở hữu -->
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image for Sale</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_upload') }}" class="upload-form">
+            <h2>Upload Image for Sale</h2>
+            
+            <div class="form-group">
+                <label for="file">Select Image to Sell</label>
+                <div class="file-upload" id="mainImageUpload">
+                    <input type="file" id="file" name="file" accept="image/*" required onchange="handleFileSelect(this, 'mainImagePreview')">
+                    <div class="upload-placeholder" id="mainImagePreview">
+                        <i class="upload-icon">📸</i>
+                        <span class="upload-text">Click to upload or drag and drop</span>
+                        <span class="file-support">Supports: JPG, PNG, GIF (Max 10MB)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="owner">Owner's Name</label>
+                <input type="text" id="owner" name="owner" required>
+            </div>
+
+            <div class="form-group">
+                <label for="logo">Optional: Select Logo for Watermark</label> <!-- Sửa lại id và name từ watermark thành logo -->
+                <div class="file-upload" id="logoUpload">
+                    <input type="file" id="logo" name="logo" accept="image/*" onchange="handleFileSelect(this, 'logoPreview')">
+                    <div class="upload-placeholder" id="logoPreview">
+                        <i class="upload-icon">🖼️</i>
+                        <span class="upload-text">Add your watermark (optional)</span>
+                        <span class="file-support">Supports: PNG with transparency</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Upload Image</button>
+        </form>
+    </div>
+
+    <script>
+        function handleFileSelect(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            
+            if (file) {
+                // Tạo preview cho image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" class="file-preview-image" alt="Preview">
+                        <span class="selected-file-name">${file.name}</span>
+                    `;
+                };
+                reader.readAsDataURL(file);
+                
+                // Thêm class để styled cho trạng thái đã chọn file
+                input.parentElement.classList.add('has-file');
+            } else {
+                // Reset về trạng thái ban đầu
+                const isMainUpload = previewId === 'mainImagePreview';
+                preview.innerHTML = `
+                    <i class="upload-icon">${isMainUpload ? '📸' : '🖼️'}</i>
+                    <span class="upload-text">${isMainUpload ? 'Click to upload or drag and drop' : 'Add your watermark (optional)'}</span>
+                    <span class="file-support">${isMainUpload ? 'Supports: JPG, PNG, GIF (Max 10MB)' : 'Supports: PNG with transparency'}</span>
+                `;
+                input.parentElement.classList.remove('has-file');
+            }
+        }
+    </script>
+</body>
+</html>

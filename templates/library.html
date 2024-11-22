@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Library</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h2>Your Purchased Images</h2>
+    <div class="library-grid">
+        {% for image in images %}
+        <div class="library-item">
+            <img src="{{ url_for('static', filename='uploads/' + image[0]) }}" alt="Image">
+            <form method="POST" action="{{ url_for('download', filename=image[0]) }}">
+                <label for="key">Enter Decryption Key:</label>
+                <input type="text" id="key" name="key" required>
+                <button type="submit">Download</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
