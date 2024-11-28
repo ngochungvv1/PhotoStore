@@ -10,11 +10,22 @@
         {% for image in images %}
         <div class="library-item">
             <img src="{{ url_for('static', filename='uploads/' + image[0]) }}" alt="Image">
-            <form method="POST" action="{{ url_for('download', filename=image[0]) }}">
-                <label for="key">Enter Decryption Key:</label>
-                <input type="text" id="key" name="key" required>
-                <button type="submit">Download</button>
-            </form>
+
+            {% set key_session = session.get(image[0] + '_key', None) %}
+            {% if key_session %}
+                <!-- Nếu key đã được lưu trong session, ẩn ô nhập key -->
+                <p>Decryption key is already stored. You can download the image directly.</p>
+                <form method="POST" action="{{ url_for('download', filename=image[0]) }}">
+                    <button type="submit">Download</button>
+                </form>
+            {% else %}
+                <!-- Nếu chưa có key, hiển thị ô nhập key -->
+                <form method="POST" action="{{ url_for('download', filename=image[0]) }}">
+                    <label for="key">Enter Decryption Key:</label>
+                    <input type="text" id="key" name="key" required>
+                    <button type="submit">Download</button>
+                </form>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

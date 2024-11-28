@@ -5,6 +5,23 @@
     <title>Photo Store</title>
 </head>
 <body>
+    <header>
+        <nav>
+            <!-- Kiểm tra xem người dùng đã đăng nhập chưa -->
+            {% if 'username' not in session %}
+                <a href="{{ url_for('login') }}" class="login-button">Login</a>
+            {% else %}
+                <div class="user-menu">
+                    <button class="user-name">{{ session['username'] }}</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('library') }}">Library</a>
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    </div>
+                </div>
+            {% endif %}
+        </nav>
+    </header>
+
     <h1>Gallery</h1>
     <div class="image-grid">
         {% for image in images %}
@@ -16,5 +33,6 @@
         </div>
         {% endfor %}
     </div>
+
 </body>
 </html>
