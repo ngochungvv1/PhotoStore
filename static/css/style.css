@@ -332,3 +332,76 @@ input[type="text"]:focus {
 .file-preview-image {
     object-fit: contain;
 }
+
+/* Đặt navbar ở trên cùng */
+header nav {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+/*-------------------------------------------*/
+/* Đặt navbar ở trên cùng */
+header nav {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+/* Các nút đăng nhập/đăng xuất */
+.login-button, .logout-button {
+    text-decoration: none;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.login-button:hover, .logout-button:hover {
+    background-color: #45a049;
+}
+
+/* Định dạng menu của người dùng */
+.user-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.user-name {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.user-name:hover {
+    background-color: #45a049;
+}
+
+/* Dropdown menu */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+.user-menu:hover .dropdown-content {
+    display: block;
+}
+
