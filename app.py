@@ -12,7 +12,7 @@ app.secret_key = 'n20dcat043'
 UPLOAD_FOLDER = 'static/uploads/'
 
 # Kết nối SQL Server
-conn = pyodbc.connect("Driver={SQL Server}; Server=LAPTOP-IQ2M6252\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
+conn = pyodbc.connect("Driver={SQL Server}; Server=DESKTOP-T7J02M7\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
 
 
 def generate_unique_key(length=10):
@@ -180,17 +180,22 @@ def download(filename):
         JOIN Images ON Purchases.image_id = Images.image_id 
         WHERE Purchases.user_id = ? AND Images.filename = ?
     """, (user_id, filename))
-    
+
     result = cursor.fetchone()
     if result:
         stored_key, original_filepath = result
 
         if stored_key == input_key:
+            # Lưu key vào session nếu key nhập đúng
+            session[f"{filename}_key"] = input_key
+
             # Nếu key khớp, cho phép tải phiên bản gốc không có watermark
-            return send_from_directory(os.path.dirname(original_filepath), os.path.basename(original_filepath), as_attachment=True)
-    
+            return send_from_directory(os.path.dirname(original_filepath), os.path.basename(original_filepath),
+                                       as_attachment=True)
+
     # Nếu key không khớp, chuyển hướng về thư viện
     return redirect(url_for('library'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
