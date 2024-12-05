@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực email</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="verify-container">
+        <h2>Xác thực email</h2>
+        <p>Mã xác thực đã được gửi đến email của bạn</p>
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="verification_code">Nhập mã xác thực</label>
+                <input type="text" id="verification_code" name="verification_code" required>
+            </div>
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="verify-btn">Xác thực</button>
+        </form>
+    </div>
+    <!-- verify.html - Add popup HTML at bottom -->
+    <div id="successPopup" class="popup">
+        <div class="popup-content">
+            <h3>Thành công!</h3>
+            <p>Đăng ký tài khoản thành công</p>
+        </div>
+    </div>
+    <script src="/static/js/verify.js"></script>
+</body>
+</html>

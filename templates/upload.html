@@ -6,6 +6,7 @@
     <title>Upload Image for Sale</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+{% include 'header.html' %}
 <body>
     <div class="container">
         <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_upload') }}" class="upload-form">

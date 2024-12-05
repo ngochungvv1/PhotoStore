@@ -4,8 +4,8 @@
     <title>Your Library</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+{% include 'header.html' %}
 <body>
-    <h2>Your Purchased Images</h2>
     <div class="library-grid">
         {% for image in images %}
         <div class="library-item">

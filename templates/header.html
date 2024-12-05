@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/header.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo-nav">
+            <img src="/static/image/logo.png" alt="Logo" class="logo">
+            <nav class="main-nav">
+                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Trang chủ</a>
+                <a href="/library" class="nav-link {% if request.path == '/library' %}active{% endif %}">Bộ sưu tập</a>
+            </nav>
+        </div>
+        
+        <div class="header-actions">
+            <div class="search-container">
+                <input type="text" placeholder="Tìm kiếm ảnh" class="search-input" id="searchInput">
+                <button class="search-btn">
+                </button>
+            </div>
+            <div class="user-actions">
+                {% if session.get('logged_in') %}
+                    <div class="user-menu">
+                        <span class="user-name">{{ session.get('username') }}</span>
+                        <div class="dropdown-content">
+                            <a href="/profile">Hồ sơ</a>
+                            <a href="/settings">Cài đặt</a>
+                            <a href="/logout">Đăng xuất</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <button class="login-btn" id="loginBtn">Đăng nhập</button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <script src="/static/js/header.js"></script>
+</body>
+</html>
