@@ -20,9 +20,11 @@
         </div>
         
         <div class="header-actions">
+            {% if request.path == '/' %}
             <div class="search-container">
                 <input type="text" placeholder="Tìm kiếm ảnh" class="search-input" id="searchInput">
             </div>
+            {% endif %}
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
                     var searchBtn = document.getElementById("searchBtn");
