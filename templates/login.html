@@ -17,6 +17,9 @@
                 <label for="password">Mật khẩu</label>
                 <input type="password" id="password" name="password" required>
             </div>
+            {% if error %}
+                <p id="error-message" class="error">{{ error }}</p>
+            {% endif %}
             <a href="#" class="forgot-password">Quên mật khẩu?</a>
             <button type="submit" class="login-btn">Đăng nhập</button>
         </form>

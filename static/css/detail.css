@@ -1,0 +1,102 @@
+/* static/css/detail.css */
+.detail-page {
+    margin-top: 80px; /* Account for fixed header */
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.detail-page__container {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 2rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+.detail-page__image-container {
+    width: 100%;
+    height: 600px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.detail-page__image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.detail-page__info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.detail-page__badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.detail-page__owner {
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.detail-page__button {
+    width: 100%;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.detail-page__button--purchase {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.detail-page__button--edit {
+    background-color: #2196F3;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.detail-page__button--delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.detail-page__button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.detail-page__admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .detail-page__container {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-page__image-container {
+        height: 400px;
+    }
+}

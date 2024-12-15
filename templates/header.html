@@ -11,16 +11,26 @@
             <img src="/static/image/logo.png" alt="Logo" class="logo">
             <nav class="main-nav">
                 <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Trang chủ</a>
-                <a href="/library" class="nav-link {% if request.path == '/library' %}active{% endif %}">Bộ sưu tập</a>
+                {% if session.get('role') == 'admin' %}
+                    <a href="/admin/upload" class="nav-link {% if request.path == '/admin/upload' %}active{% endif %}">Thêm ảnh</a>
+                {% else %}
+                    <a href="/library" class="nav-link {% if request.path == '/library' %}active{% endif %}">Bộ sưu tập</a>
+                {% endif %}
             </nav>
         </div>
         
         <div class="header-actions">
             <div class="search-container">
                 <input type="text" placeholder="Tìm kiếm ảnh" class="search-input" id="searchInput">
-                <button class="search-btn">
-                </button>
             </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    var searchBtn = document.getElementById("searchBtn");
+                    if (window.location.pathname !== "/") {
+                        searchBtn.style.display = "none";
+                    }
+                });
+            </script>
             <div class="user-actions">
                 {% if session.get('logged_in') %}
                     <div class="user-menu">
@@ -39,5 +49,6 @@
     </header>
 
     <script src="/static/js/header.js"></script>
+    <script src="/static/js/search.js"></script>
 </body>
 </html>

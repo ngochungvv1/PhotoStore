@@ -1,0 +1,172 @@
+<!-- profile.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hồ sơ cá nhân</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        .submit-btn, .change-password-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 48px;
+            box-sizing: border-box; /* Include padding in height calculation */
+            display: inline-flex; /* Change to inline-flex */
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .submit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .change-password-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .submit-btn:hover, .change-password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+{% include 'header.html' %}
+<body>
+    <div class="form-container">
+        <h2>Hồ sơ cá nhân</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" value="{{ user[2] }}" disabled>
+            </div>
+            <div class="form-group">
+                <label for="fullname">Họ và tên</label>
+                <input type="text" id="fullname" name="fullname" value="{{ user[0] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Địa chỉ Email</label>
+                <input type="email" id="email" value="{{ user[1] }}" disabled>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="submit-btn">Cập nhật</button>
+                <button type="button" class="change-password-btn" onclick="showChangePasswordPopup()">Đổi mật khẩu</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Change Password Popup -->
+    <div id="passwordPopup" class="popup-overlay">
+        <div class="popup">
+            <span class="close-btn" onclick="hideChangePasswordPopup()">&times;</span>
+            <h3>Đổi mật khẩu</h3>
+            <form id="changePasswordForm" onsubmit="return changePassword(event)">
+                <div class="form-group">
+                    <label for="currentPassword">Mật khẩu hiện tại</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu mới</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <button type="submit" class="submit-btn">Xác nhận</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showChangePasswordPopup() {
+            document.getElementById('passwordPopup').style.display = 'block';
+        }
+
+        function hideChangePasswordPopup() {
+            document.getElementById('passwordPopup').style.display = 'none';
+        }
+
+        async function changePassword(event) {
+            event.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Đổi mật khẩu thành công!');
+                    hideChangePasswordPopup();
+                } else {
+                    alert(data.error || 'Đổi mật khẩu thất bại!');
+                }
+            } catch (error) {
+                alert('Đã xảy ra lỗi!');
+            }
+        }
+    </script>
+</body>
+</html>

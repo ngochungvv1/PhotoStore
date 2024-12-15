@@ -589,4 +589,104 @@ input[type="text"]:focus {
 .user-menu:hover .dropdown-content {
     display: block;
 }
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 100px auto 40px; /* Add top margin to prevent header overlap */
+    padding: 40px 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
+.form-container h2 {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: #2196F3;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.submit-btn:hover {
+    background-color: #1976D2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 480px) {
+    .form-container {
+        margin: 80px 20px;
+        width: auto;
+    }
+}
+.search-results {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 8px 8px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-results .result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.search-results .result-item:hover {
+    background: #f5f5f5;
+}
+
+.search-results img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 10px;
+}

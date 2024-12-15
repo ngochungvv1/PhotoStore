@@ -19,9 +19,9 @@ app.secret_key = 'n20dcat043'
 UPLOAD_FOLDER = 'static/uploads/'
 
 # At the top of app.py
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
-Session(app)
+# app.config['SESSION_TYPE'] = 'filesystem'
+# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
+# Session(app)
 
 encryption_key = Fernet.generate_key()
 cipher_suite = Fernet(encryption_key)
@@ -40,11 +40,6 @@ mail = Mail(app)
 def generate_unique_key(length=10):
     """Tạo một key giải mã ngẫu nhiên cho ảnh."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
-
-@app.after_request
-def add_security_headers(response):
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'"
-    return response
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -180,6 +175,8 @@ def login():
             session['role'] = result[1]
             session['logged_in'] = True
             return redirect(url_for('admin_upload') if result[1] == 'admin' else url_for('index'))
+        else:
+            return render_template('login.html', error='Tên đăng nhập hoặc mật khẩu không đúng')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -331,6 +328,157 @@ def download(filename):
     # Nếu key không khớp, chuyển hướng về thư viện
     return redirect(url_for('library'))
 
+@app.route('/edit_image/<int:image_id>', methods=['GET', 'POST'])
+def edit_image(image_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        
+        cursor.execute("""
+            UPDATE Images 
+            SET title = ?, description = ?
+            WHERE image_id = ?
+        """, (title, description, image_id))
+        conn.commit()
+        
+        return redirect(url_for('detail', image_id=image_id))
+    
+    # GET request - show edit form
+    cursor.execute("SELECT * FROM Images WHERE image_id = ?", (image_id,))
+    image = cursor.fetchone()
+    if not image:
+        return redirect(url_for('index'))
+        
+    return render_template('edit_image.html', image=image)
+
+@app.route('/delete_image/<int:image_id>')
+def delete_image(image_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    
+    cursor = conn.cursor()
+    
+    # Get image path first
+    cursor.execute("SELECT file_path FROM Images WHERE image_id = ?", (image_id,))
+    image = cursor.fetchone()
+    
+    if image:
+        # Delete file from filesystem
+        file_path = os.path.join(app.root_path, 'static/uploads/', image[0])
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        # Delete from database
+        cursor.execute("DELETE FROM Images WHERE image_id = ?", (image_id,))
+        conn.commit()
+    
+    return redirect(url_for('index'))@app.route('/edit_image/<int:image_id>', methods=['GET', 'POST'])
+def edit_image(image_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        
+        cursor.execute("""
+            UPDATE Images 
+            SET title = ?, description = ?
+            WHERE image_id = ?
+        """, (title, description, image_id))
+        conn.commit()
+        
+        return redirect(url_for('detail', image_id=image_id))
+    
+    # GET request - show edit form
+    cursor.execute("SELECT * FROM Images WHERE image_id = ?", (image_id,))
+    image = cursor.fetchone()
+    if not image:
+        return redirect(url_for('index'))
+        
+    return render_template('edit_image.html', image=image)
+
+@app.route('/delete_image/<int:image_id>', endpoint='admin_delete_image')
+def delete_image(image_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    
+    cursor = conn.cursor()
+    
+    # Get image path first
+    cursor.execute("SELECT file_path FROM Images WHERE image_id = ?", (image_id,))
+    image = cursor.fetchone()
+    
+    if image:
+        # Delete file from filesystem
+        file_path = os.path.join(app.root_path, 'static/uploads/', image[0])
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        # Delete from database
+        cursor.execute("DELETE FROM Images WHERE image_id = ?", (image_id,))
+        conn.commit()
+    
+    return redirect(url_for('index'))
+# app.py
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        fullname = request.form['fullname']
+        # Update only fullname
+        cursor.execute("UPDATE Users SET fullname = ? WHERE username = ?",
+                      (fullname, session['username']))
+        conn.commit()
+        return redirect(url_for('profile'))
+
+    # Fetch user data
+    cursor.execute("""
+        SELECT fullname, email, username 
+        FROM Users 
+        WHERE username = ?""", 
+        (session['username'],))
+    user = cursor.fetchone()
+    
+    if not user:
+        return redirect(url_for('logout'))
+
+    return render_template('profile.html', user=user)
+
+from flask import jsonify, request
+
+@app.route('/search')
+def search():
+    search_term = request.args.get('term', '').strip()
+    cursor = conn.cursor()
+
+    try:
+        if search_term:
+            cursor.execute("""
+                SELECT image_id, filename 
+                FROM Images 
+                WHERE filename LIKE ?
+            """, ('%' + search_term + '%',))
+        else:
+            cursor.execute("SELECT image_id, filename FROM Images")
+
+        images = cursor.fetchall()
+        results = [{'id': img[0], 'filename': img[1]} for img in images]
+        return jsonify(results)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
