@@ -5,14 +5,14 @@ from PIL import Image, ImageDraw, ImageFont
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
-from datetime import timedelta 
+from datetime import timedelta
 from flask_session import Session
 import secrets
 import pyodbc
 import os
 import random
 import string
-from utils.image_utils import add_logo_watermark, add_text_watermark, generate_random_text
+from utils.image_utils import add_logo_watermark, add_text_watermark, generate_random_text, embed_watermark, extract_watermark
 
 app = Flask(__name__)
 app.secret_key = 'n20dcat043'
@@ -27,7 +27,7 @@ encryption_key = Fernet.generate_key()
 cipher_suite = Fernet(encryption_key)
 
 # Kết nối SQL Server
-conn = pyodbc.connect("Driver={SQL Server}; Server=LAPTOP-IQ2M6252\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
+conn = pyodbc.connect("Driver={SQL Server}; Server=DESKTOP-T7J02M7\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -54,9 +54,24 @@ def handle_exception(e):
 @app.route('/')
 def index():
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Images WHERE is_sold = 0")
+    cursor.execute("SELECT image_id, filename, owner, is_sold FROM Images WHERE is_sold = 0")
     images = cursor.fetchall()
-    return render_template('index.html', images=images)
+
+    # Thay đổi filename thành _display.png nếu có
+    updated_images = []
+    for image in images:
+        image_id, filename, owner, is_sold = image
+
+        # Thay đổi filename từ _watermarked.png thành _display.png
+        if '_watermarked.png' in filename:
+            display_filename = filename.replace('_watermarked.png', '_display.png')
+        else:
+            display_filename = filename  # Nếu không phải _watermarked.png, giữ nguyên
+
+        updated_images.append((image_id, display_filename, owner, is_sold))
+
+    return render_template('index.html', images=updated_images)
+
 
 def generate_verification_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -196,49 +211,121 @@ def admin_upload():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Upload file hình ảnh để bán
+        # Upload file ảnh và logo
         file = request.files['file']
+        logo = request.files.get('logo')  # Logo là tùy chọn
         owner = request.form['owner']
+        watermark_type = request.form.get('watermark_type')  # 'logo' hoặc 'text'
 
-        # Tạo tên file ngẫu nhiên và đảm bảo không trùng lặp
-        random_filename = generate_random_text() + ".jpg"
-        original_filepath = os.path.join(UPLOAD_FOLDER, random_filename)  # Đường dẫn ảnh gốc
-        file.save(original_filepath)
+        # Lưu ảnh gốc
+        original_filename = secure_filename(file.filename)
+        base_name = original_filename.rsplit('.', 1)[0]
+        png_filename = f"{base_name}.png"
+        png_filepath = os.path.join(UPLOAD_FOLDER, png_filename)
 
-        # Kiểm tra xem có upload logo không
-        logo = request.files.get('logo')
+        original_image = Image.open(file).convert("RGB")
+        original_image.save(png_filepath, format='PNG')
+
+        # Lưu file logo nếu có
         if logo:
             logo_filename = secure_filename(logo.filename)
-            logo_filepath = os.path.join(UPLOAD_FOLDER, logo_filename)
-            logo.save(logo_filepath)
-            # Thêm logo làm watermark
-            watermarked_image = add_logo_watermark(original_filepath, logo_filepath)
+            logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_filename.rsplit('.', 1)[0]}.png")
+            logo_image = Image.open(logo).convert("RGBA")
+            logo_image.save(logo_filepath, format='PNG')
         else:
-            # Thêm tên tác giả làm watermark
-            watermarked_image = add_text_watermark(original_filepath, owner)
+            logo_filepath = None
 
-        # Đặt tên file mới cho ảnh có watermark và lưu nó
-        watermarked_filename = random_filename.replace(".jpg", "_watermarked.jpg")
-        output_path = os.path.join(UPLOAD_FOLDER, watermarked_filename)
-        watermarked_image.save(output_path)
+        # Nhúng watermark ẩn
+        if logo_filepath:
+            watermark_image = Image.open(logo_filepath).convert("1")
+        else:
+            watermark_image = Image.new("1", original_image.size, color=0)
 
-        # Tạo khóa giải mã duy nhất cho ảnh
-        decryption_key = generate_unique_key()
+        watermarked_image = embed_watermark(original_image, watermark_image)
+        watermarked_filename = f"{base_name}_watermarked.png"
+        watermarked_filepath = os.path.join(UPLOAD_FOLDER, watermarked_filename)
+        watermarked_image.save(watermarked_filepath, format='PNG')
 
-        # Lưu thông tin vào database với ảnh đã có watermark
+        # Chèn logo hoặc văn bản hiển thị
+        if watermark_type == 'logo' and logo_filepath:
+            display_image = add_logo_watermark(png_filepath, logo_filepath)
+        elif watermark_type == 'text':
+            display_image = add_text_watermark(png_filepath, owner)
+        else:
+            display_image = original_image
+
+        display_filename = f"{base_name}_display.png"
+        display_filepath = os.path.join(UPLOAD_FOLDER, display_filename)
+        display_image.save(display_filepath, format='PNG')
+
+        # Tạo khóa giải mã
+        decryption_key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+        # Lưu thông tin vào database
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO Images (filename, owner, decryption_key, filepath, original_filepath) VALUES (?, ?, ?, ?, ?)",
-                       (watermarked_filename, owner, decryption_key, output_path, original_filepath))
+        cursor.execute("""
+            INSERT INTO Images (filename, owner, decryption_key, filepath, original_filepath) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            watermarked_filename,
+            owner,
+            decryption_key,
+            watermarked_filepath,
+            png_filepath
+        ))
         conn.commit()
+
         return redirect(url_for('index'))
+
     return render_template('upload.html')
+
+@app.route('/extract_logo', methods=['GET', 'POST'])
+def extract_logo():
+    if request.method == 'POST':
+        # Upload ảnh đã nhúng watermark
+        file = request.files['file']
+        uploaded_filepath = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+        file.save(uploaded_filepath)
+
+        # Mở ảnh đã nhúng watermark
+        watermarked_image = Image.open(uploaded_filepath).convert("RGB")
+
+        # Trích xuất watermark
+        extracted_logo = extract_watermark(watermarked_image)
+
+        # Lưu logo đã trích xuất
+        extracted_logo_path = uploaded_filepath.replace(".jpg", "_extracted_logo.jpg")
+        extracted_logo.save(extracted_logo_path)
+
+        # Gửi ảnh đã trích xuất về người dùng
+        return send_from_directory(
+            os.path.dirname(extracted_logo_path),
+            os.path.basename(extracted_logo_path),
+            as_attachment=True
+        )
+
+    return render_template('extract_logo.html')
 
 @app.route('/detail/<int:image_id>')
 def detail(image_id):
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Images WHERE image_id = ?", (image_id,))
+    cursor.execute("SELECT image_id, filename, owner FROM Images WHERE image_id = ?", (image_id,))
     image = cursor.fetchone()
+
+    if image:
+        image_id, filename, owner = image
+
+        # Thay đổi tên file để hiển thị file _display.png
+        if '_watermarked.png' in filename:
+            display_filename = filename.replace('_watermarked.png', '_display.png')
+        else:
+            display_filename = filename
+
+        # Truyền lại tên file _display.png thay vì tên file gốc
+        image = (image_id, display_filename, owner)
+
     return render_template('detail.html', image=image)
+
 
 
 @app.route('/purchase/<int:image_id>', methods=['GET', 'POST'])
@@ -297,36 +384,36 @@ def library():
 
 
 @app.route('/download/<filename>', methods=['POST'])
+@app.route('/download/<filename>', methods=['POST'])
 def download(filename):
     input_key = request.form['key']
     cursor = conn.cursor()
 
-    # Lấy user_id của người dùng hiện tại
-    cursor.execute("SELECT user_id FROM Users WHERE username = ?", (session['username'],))
-    user_id = cursor.fetchone()[0]
-
-    # Xác minh key giải mã của người dùng với ảnh cụ thể từ bảng Purchases
+    # Lấy thông tin ảnh từ database dựa trên tên file
     cursor.execute("""
-        SELECT Purchases.decryption_key, Images.original_filepath
+        SELECT Purchases.decryption_key, Images.filepath
         FROM Purchases 
         JOIN Images ON Purchases.image_id = Images.image_id 
-        WHERE Purchases.user_id = ? AND Images.filename = ?
-    """, (user_id, filename))
+        WHERE Purchases.user_id = (SELECT user_id FROM Users WHERE username = ?)
+        AND Images.filename = ?
+    """, (session['username'], filename))
 
     result = cursor.fetchone()
     if result:
-        stored_key, original_filepath = result
+        stored_key, watermarked_filepath = result
 
+        # Kiểm tra mã giải mã
         if stored_key == input_key:
-            # Lưu key vào session nếu key nhập đúng
-            session[f"{filename}_key"] = input_key
+            # Cho phép tải về file có watermark
+            return send_from_directory(
+                os.path.dirname(watermarked_filepath),
+                os.path.basename(watermarked_filepath),
+                as_attachment=True
+            )
 
-            # Nếu key khớp, cho phép tải phiên bản gốc không có watermark
-            return send_from_directory(os.path.dirname(original_filepath), os.path.basename(original_filepath),
-                                       as_attachment=True)
-
-    # Nếu key không khớp, chuyển hướng về thư viện
+    # Nếu mã không khớp, chuyển hướng về thư viện với thông báo lỗi
     return redirect(url_for('library'))
+
 
 @app.route('/edit_image/<int:image_id>', methods=['GET', 'POST'])
 def edit_image(image_id):
