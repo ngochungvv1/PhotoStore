@@ -115,13 +115,13 @@
 <body>
     <div class="container">
         <div class="image-container">
-            <img src="{{ url_for('static', filename='uploads/' + image[1]) }}" 
+            <img src="{{ url_for('static', filename='uploads/' + image[1]) }}"
                  alt="Image">
         </div>
         <div class="details-container">
             <div class="badge">Digital Asset</div>
             <p><strong>Owner:</strong> <span>{{ image[2] }}</span></p>
-            <button class="purchase-btn" 
+            <button class="purchase-btn"
                     onclick="window.location.href='{{ url_for('purchase', image_id=image[0]) }}'">
                 Mua ngay
             </button>

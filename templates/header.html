@@ -13,12 +13,13 @@
                 <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Trang chủ</a>
                 {% if session.get('role') == 'admin' %}
                     <a href="/admin/upload" class="nav-link {% if request.path == '/admin/upload' %}active{% endif %}">Thêm ảnh</a>
+                    <a href="/extract_logo" class="nav-link {% if request.path == '/extract_logo' %}active{% endif %}">Trích xuất watermark</a>
                 {% else %}
                     <a href="/library" class="nav-link {% if request.path == '/library' %}active{% endif %}">Bộ sưu tập</a>
                 {% endif %}
             </nav>
         </div>
-        
+
         <div class="header-actions">
             {% if request.path == '/' %}
             <div class="search-container">

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kiểm Tra Bản Quyền</title>
+</head>
+<body>
+    <h2>Kiểm Tra Bản Quyền</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="file">Chọn ảnh để kiểm tra:</label>
+        <input type="file" name="file" id="file" required>
+        <button type="submit">Kiểm Tra</button>
+    </form>
+
+    {% if extracted_text %}
+        <h3>Kết quả trích xuất watermark văn bản:</h3>
+        <p>{{ extracted_text }}</p>
+    {% endif %}
+
+    {% if extracted_logo_path %}
+        <h3>Kết quả trích xuất watermark logo:</h3>
+        <img src="{{ url_for('static', filename='uploads/' + extracted_logo_path.split('/')[-1]) }}" alt="Watermark Logo">
+    {% endif %}
+</body>
+</html>

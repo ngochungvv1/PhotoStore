@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trích Xuất Logo</title>
+</head>
+<body>
+    <h1>Trích Xuất Logo</h1>
+    <form action="{{ url_for('extract_logo') }}" method="POST" enctype="multipart/form-data">
+    <label for="file">Tải ảnh đã nhúng:</label>
+    <input type="file" name="file" id="file" required>
+    <br><br>
+    <button type="submit">Trích Xuất</button>
+</form>
+
+</body>
+</html>

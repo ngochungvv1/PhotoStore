@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán VNPay</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/payment.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Thanh Toán VNPay</h2>
+        <form action="{{ url_for('vnpay_payment') }}" method="POST">
+            <label for="amount">Số tiền thanh toán:</label>
+            <input type="text" id="amount" name="amount" value="{{ amount }}" readonly><br><br>
+
+            <label for="order_info">Thông tin đơn hàng:</label>
+            <input type="text" id="order_info" name="order_info" value="Mua ảnh từ PhotoStore"><br><br>
+
+            <label for="customer_email">Email khách hàng:</label>
+            <input type="email" id="customer_email" name="customer_email"><br><br>
+
+            <label for="customer_phone">Số điện thoại khách hàng:</label>
+            <input type="text" id="customer_phone" name="customer_phone"><br><br>
+
+            <input type="submit" value="Thanh toán">
+        </form>
+    </div>
+</body>
+</html>
