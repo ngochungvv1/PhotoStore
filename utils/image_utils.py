@@ -2,6 +2,7 @@ import random
 import string
 from PIL import Image, ImageDraw, ImageFont
 import cv2
+import numpy as np
 
 
 # def add_watermark(image_path, watermark_text):
@@ -71,11 +72,47 @@ def add_text_watermark(image_path, text):
     # Trả về đối tượng ảnh
     return watermarked_image.convert("RGB")  # Chuyển đổi sang RGB để lưu dưới dạng JPEG
 
-
-def hide_owner_info(image_path, owner_info):
-    image = cv2.imread(image_path)
-    # Thêm code để ẩn owner_info vào ảnh (VD: lưu vào metadata)
-    return image_path
 def generate_random_text(length=6):
     letters_and_digits = string.ascii_letters + string.digits
     return ''.join(random.choice(letters_and_digits) for _ in range(length))
+#------------------------------------------------------------------------------------------
+def embed_watermark(image, watermark):
+    """
+    Nhúng watermark vào ảnh gốc bằng phương pháp LSB.
+
+    - image: Ảnh gốc (Pillow Image object).
+    - watermark: Ảnh watermark (Pillow Image object, đã được resize).
+
+    Returns:
+        Ảnh đã nhúng watermark (Pillow Image object).
+    """
+    # Resize watermark để phù hợp với kích thước ảnh gốc
+    watermark_resized = watermark.resize((image.width, image.height), Image.Resampling.LANCZOS)
+
+    # Chuyển đổi ảnh sang mảng numpy
+    image_array = np.array(image)
+    watermark_array = np.array(watermark_resized)
+
+    # Nhúng watermark vào bit cuối cùng của kênh màu xanh (blue channel)
+    watermarked_array = image_array.copy()
+    watermarked_array[..., 2] = (image_array[..., 2] & 0b11111110) | watermark_array
+
+    return Image.fromarray(watermarked_array)
+
+
+def extract_watermark(watermarked_image):
+    """
+    Trích xuất watermark từ ảnh đã được nhúng.
+
+    - watermarked_image: Ảnh đã nhúng watermark (Pillow Image object).
+
+    Returns:
+        Ảnh watermark được trích xuất (Pillow Image object).
+    """
+    # Chuyển đổi ảnh sang mảng numpy
+    watermarked_array = np.array(watermarked_image)
+
+    # Lấy watermark từ bit cuối cùng của kênh màu xanh (blue channel)
+    extracted_watermark = (watermarked_array[..., 2] & 0b00000001) * 255
+
+    return Image.fromarray(extracted_watermark)
