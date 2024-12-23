@@ -4,15 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trích Xuất Logo</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <h1>Trích Xuất Logo</h1>
-    <form action="{{ url_for('extract_logo') }}" method="POST" enctype="multipart/form-data">
-    <label for="file">Tải ảnh đã nhúng:</label>
-    <input type="file" name="file" id="file" required>
-    <br><br>
-    <button type="submit">Trích Xuất</button>
-</form>
+    {% include 'header.html' %}
+    <div class="container" style="margin-top: 80px;">
+        <h1>Trích Xuất Logo</h1>
+        <form action="{{ url_for('extract_logo') }}" method="POST" enctype="multipart/form-data" style="padding: 20px 0px;">    
+            <label for="file">Tải ảnh đã nhúng:</label>
+            <!-- <input type="file" name="file" id="file" required> -->
+            <div class="file-upload" id="mainImageUpload" style="margin-top: 5px;">
+                <input type="file" id="file" name="file" accept="image/*" required onchange="handleFileSelect(this, 'mainImagePreview')">
+                <div class="upload-placeholder" id="mainImagePreview">
+                    <i class="upload-icon">📸</i>
+                    <span class="upload-text">Click to upload or drag and drop</span>
+                    <span class="file-support">Supports: JPG, PNG, GIF (Max 10MB)</span>
+                </div>
+            </div>
+            <br><br>
+            <button class="submit-btn" type="submit">Trích Xuất</button>
+        </form>
+    </div>
 
 </body>
+
+<script>
+    function handleFileSelect(input, previewId) {
+        const preview = document.getElementById(previewId);
+        const file = input.files[0];
+        
+        if (file) {
+            // Tạo preview cho image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" class="file-preview-image" alt="Preview">
+                    <span class="selected-file-name">${file.name}</span>
+                `;
+            };
+            reader.readAsDataURL(file);
+            
+            // Thêm class để styled cho trạng thái đã chọn file
+            input.parentElement.classList.add('has-file');
+        } else {
+            // Reset về trạng thái ban đầu
+            const isMainUpload = previewId === 'mainImagePreview';
+            preview.innerHTML = `
+                <i class="upload-icon">${isMainUpload ? '📸' : '🖼️'}</i>
+                <span class="upload-text">${isMainUpload ? 'Click to upload or drag and drop' : 'Add your watermark (optional)'}</span>
+                <span class="file-support">${isMainUpload ? 'Supports: JPG, PNG, GIF (Max 10MB)' : 'Supports: PNG with transparency'}</span>
+            `;
+            input.parentElement.classList.remove('has-file');
+        }
+    }
+</script>
 </html>

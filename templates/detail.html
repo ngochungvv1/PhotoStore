@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Detail</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+
     <style>
         * {
             margin: 0;
@@ -23,6 +25,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            margin-top: 30px;
             display: grid;
             grid-template-columns: 3fr 1fr;
             gap: 2rem;
@@ -112,6 +115,7 @@
         }
     </style>
 </head>
+{% include 'header.html' %}
 <body>
     <div class="container">
         <div class="image-container">
@@ -121,8 +125,9 @@
         <div class="details-container">
             <div class="badge">Digital Asset</div>
             <p><strong>Owner:</strong> <span>{{ image[2] }}</span></p>
-            <button class="purchase-btn"
-                    onclick="window.location.href='{{ url_for('purchase', image_id=image[0]) }}'">
+            <p><strong>Price:</strong> <span>{{ image[7] }}</span></p>
+            <button type="button" class="purchase-btn" 
+                    onclick="location.href='{{ url_for('purchase', image_id=image[0]) }}'">
                 Mua ngay
             </button>
         </div>

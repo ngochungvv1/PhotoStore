@@ -27,7 +27,7 @@ encryption_key = Fernet.generate_key()
 cipher_suite = Fernet(encryption_key)
 
 # Kết nối SQL Server
-conn = pyodbc.connect("Driver={SQL Server}; Server=DESKTOP-T7J02M7\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
+conn = pyodbc.connect("Driver={SQL Server}; Server=LAPTOP-IQ2M6252\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -215,7 +215,7 @@ def admin_upload():
         file = request.files['file']
         logo = request.files.get('logo')  # Logo là tùy chọn
         owner = request.form['owner']
-        watermark_type = request.form.get('watermark_type')  # 'logo' hoặc 'text'
+        watermark_type = 'text'  # 'logo' hoặc 'text'
 
         # Lưu ảnh gốc
         original_filename = secure_filename(file.filename)
@@ -247,12 +247,10 @@ def admin_upload():
         watermarked_image.save(watermarked_filepath, format='PNG')
 
         # Chèn logo hoặc văn bản hiển thị
-        if watermark_type == 'logo' and logo_filepath:
-            display_image = add_logo_watermark(png_filepath, logo_filepath)
-        elif watermark_type == 'text':
+        if watermark_type == 'text' and owner:
             display_image = add_text_watermark(png_filepath, owner)
         else:
-            display_image = original_image
+            display_image = add_text_watermark(png_filepath, 'PhotoStore')
 
         display_filename = f"{base_name}_display.png"
         display_filepath = os.path.join(UPLOAD_FOLDER, display_filename)
@@ -379,8 +377,21 @@ def library():
         WHERE Purchases.user_id = ?
     """, (user_id,))
     purchased_images = cursor.fetchall()
+    
+    updated_images = []
+    for image in purchased_images:
+        filename, decryption_key = image
 
-    return render_template('library.html', images=purchased_images)
+        # Thay đổi filename từ _watermarked.png thành _display.png
+        if '_watermarked.png' in filename:
+            display_filename = filename.replace('_watermarked.png', '_display.png')
+        else:
+            display_filename = filename  # Nếu không phải _watermarked.png, giữ nguyên
+
+        updated_images.append((display_filename, decryption_key, filename))
+
+    # return render_template('library.html', images=purchased_images)
+    return render_template('library.html', images=updated_images)
 
 
 @app.route('/download/<filename>', methods=['POST'])

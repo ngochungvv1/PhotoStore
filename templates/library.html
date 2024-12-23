@@ -20,7 +20,7 @@
                 </form>
             {% else %}
                 <!-- Nếu chưa có key, hiển thị ô nhập key -->
-                <form method="POST" action="{{ url_for('download', filename=image[0]) }}">
+                <form method="POST" action="{{ url_for('download', filename=image[2]) }}">
                     <label for="key">Enter Decryption Key:</label>
                     <input type="text" id="key" name="key" required>
                     <button type="submit">Download</button>

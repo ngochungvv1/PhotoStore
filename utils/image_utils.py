@@ -57,14 +57,38 @@ def add_text_watermark(image_path, text):
     except IOError:
         font = ImageFont.load_default()
 
-    # Thêm văn bản ở vị trí dưới cùng bên phải
-    text_bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = text_bbox[2] - text_bbox[0]
-    text_height = text_bbox[3] - text_bbox[1]
-    position = (image.size[0] - text_width - 10, image.size[1] - text_height - 10)
+    # # Thêm văn bản ở vị trí dưới cùng bên phải
+    # text_bbox = draw.textbbox((0, 0), text, font=font)
+    # text_width = text_bbox[2] - text_bbox[0]
+    # text_height = text_bbox[3] - text_bbox[1]
+    # position = (image.size[0] - text_width - 10, image.size[1] - text_height - 10)
+
+    # # Vẽ văn bản lên lớp trong suốt với độ mờ
+    # draw.text(position, text, fill=(255, 255, 255, 128), font=font)
+
+    # # Hợp nhất lớp văn bản với ảnh gốc
+    # watermarked_image = Image.alpha_composite(image, txt_layer)
+
+    # Tính toán vị trí của từng văn bản
+    text1_bbox = draw.textbbox((0, 0), text, font=font)
+    text1_width = text1_bbox[2] - text1_bbox[0]
+    text1_height = text1_bbox[3] - text1_bbox[1]
+    position1 = (10, 10)
+
+    text2_bbox = draw.textbbox((0, 0), text, font=font)
+    text2_width = text2_bbox[2] - text2_bbox[0]
+    text2_height = text2_bbox[3] - text2_bbox[1]
+    position2 = ((image.size[0] - text2_width) // 2, (image.size[1] - text2_height) // 2)
+
+    text3_bbox = draw.textbbox((0, 0), text, font=font)
+    text3_width = text3_bbox[2] - text3_bbox[0]
+    text3_height = text3_bbox[3] - text3_bbox[1]
+    position3 = (image.size[0] - text3_width - 10, image.size[1] - text3_height - 10)
 
     # Vẽ văn bản lên lớp trong suốt với độ mờ
-    draw.text(position, text, fill=(255, 255, 255, 128), font=font)
+    draw.text(position1, text, fill=(255, 255, 255, 128), font=font)
+    draw.text(position2, text, fill=(255, 255, 255, 128), font=font)
+    draw.text(position3, text, fill=(255, 255, 255, 128), font=font)
 
     # Hợp nhất lớp văn bản với ảnh gốc
     watermarked_image = Image.alpha_composite(image, txt_layer)

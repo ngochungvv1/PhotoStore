@@ -4,33 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload ảnh</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <h1>Upload ảnh</h1>
-    <form action="{{ url_for('admin_upload') }}" method="POST" enctype="multipart/form-data">
-    <label for="file">Chọn ảnh gốc:</label>
-    <input type="file" name="file" id="file" required>
-    <br><br>
-
-    <label for="logo">Chọn logo (tùy chọn):</label>
-    <input type="file" name="logo" id="logo">
-    <br><br>
-
-    <label for="owner">Tên tác giả:</label>
-    <input type="text" name="owner" id="owner" required>
-    <br><br>
-
-    <label for="watermark_type">Loại watermark hiển thị:</label>
-    <select name="watermark_type" id="watermark_type">
-        <option value="logo">Chèn logo</option>
-        <option value="text">Chèn văn bản</option>
-        <option value="" selected>Không chèn</option>
-    </select>
-    <br><br>
-
-    <button type="submit">Nhúng Watermark</button>
-</form>
-
-
+    {% include 'header.html' %}
+    <div class="container" style="margin-top: 80px;">
+        <h1>Upload ảnh</h1>
+        <form action="{{ url_for('admin_upload') }}" method="POST" enctype="multipart/form-data" style="padding: 20px 0px;">
+            <label for="file">Chọn ảnh gốc:</label>
+            <!-- <input class="file-upload" type="file" name="file" id="file" required> -->
+            <div class="file-upload" id="mainImageUpload" style="margin-top: 5px;">
+                <input type="file" id="file" name="file" accept="image/*" required onchange="handleFileSelect(this, 'mainImagePreview')">
+                <div class="upload-placeholder" id="mainImagePreview">
+                    <i class="upload-icon">📸</i>
+                    <span class="upload-text">Click to upload or drag and drop</span>
+                    <span class="file-support">Supports: JPG, PNG, GIF (Max 10MB)</span>
+                </div>
+            </div>
+            <br><br>
+        
+            <label for="logo">Chọn logo (tùy chọn):</label>
+            <!-- <input class="file-upload" type="file" name="logo" id="logo"> -->
+            <div class="file-upload" id="logoUpload" style="margin-top: 5px;">
+                <input type="file" id="logo" name="logo" accept="image/*" onchange="handleFileSelect(this, 'logoPreview')">
+                <div class="upload-placeholder" id="logoPreview">
+                    <i class="upload-icon">🖼️</i>
+                    <span class="upload-text">Add your watermark (optional)</span>
+                    <span class="file-support">Supports: PNG with transparency</span>
+                </div>
+            </div>
+            <br><br>
+        
+            <label for="owner">Tên tác giả:</label>
+            <input type="text" name="owner" id="owner" required>
+            <br><br>
+        
+            <button type="submit" class="submit-btn">Nhúng Watermark</button>
+        </form>
+    </div>
 </body>
+<script>
+    function handleFileSelect(input, previewId) {
+        const preview = document.getElementById(previewId);
+        const file = input.files[0];
+        
+        if (file) {
+            // Tạo preview cho image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" class="file-preview-image" alt="Preview">
+                    <span class="selected-file-name">${file.name}</span>
+                `;
+            };
+            reader.readAsDataURL(file);
+            
+            // Thêm class để styled cho trạng thái đã chọn file
+            input.parentElement.classList.add('has-file');
+        } else {
+            // Reset về trạng thái ban đầu
+            const isMainUpload = previewId === 'mainImagePreview';
+            preview.innerHTML = `
+                <i class="upload-icon">${isMainUpload ? '📸' : '🖼️'}</i>
+                <span class="upload-text">${isMainUpload ? 'Click to upload or drag and drop' : 'Add your watermark (optional)'}</span>
+                <span class="file-support">${isMainUpload ? 'Supports: JPG, PNG, GIF (Max 10MB)' : 'Supports: PNG with transparency'}</span>
+            `;
+            input.parentElement.classList.remove('has-file');
+        }
+    }
+</script>
 </html>
