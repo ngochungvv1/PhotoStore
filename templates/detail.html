@@ -123,14 +123,43 @@
                  alt="Image">
         </div>
         <div class="details-container">
-            <div class="badge">Digital Asset</div>
-            <p><strong>Owner:</strong> <span>{{ image[2] }}</span></p>
-            <p><strong>Price:</strong> <span>{{ image[7] }}</span></p>
-            <button type="button" class="purchase-btn" 
-                    onclick="location.href='{{ url_for('purchase', image_id=image[0]) }}'">
-                Mua ngay
-            </button>
-        </div>
+    <div class="badge">Digital Asset</div>
+    <p><strong>Owner:</strong> <span>{{ image[2] }}</span></p>
+    <p><strong>Price:</strong> <span>{{ image[3] }} VNĐ</span></p>
+    <button id="purchase-btn" class="purchase-btn">Mua ngay</button>
+<div id="qr-container" style="margin-top: 20px; display: none;">
+    <h3>Mã QR thanh toán:</h3>
+    <img id="qr-code" src="" alt="QR Code" style="width: 200px; height: 200px;">
+</div>
+
+</div>
+
     </div>
 </body>
 </html>
+
+<script>
+    document.getElementById('purchase-btn').addEventListener('click', function () {
+        const imageId = {{ image[0] }}; // ID của ảnh từ Flask
+        const qrContainer = document.getElementById('qr-container');
+        const qrCodeImg = document.getElementById('qr-code');
+
+        // Gửi yêu cầu tới API để tạo mã QR
+        fetch(`/generate_qr/${imageId}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Không thể tạo mã QR!');
+                }
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                qrCodeImg.src = url;
+                qrContainer.style.display = 'block'; // Hiển thị khu vực mã QR
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+    });
+</script>
