@@ -1,4 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, abort, jsonify
+from io import BytesIO
+import json
+import qrcode
+import requests
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, abort, jsonify, \
+    send_file
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
 from PIL import Image, ImageDraw, ImageFont
@@ -27,7 +32,7 @@ encryption_key = Fernet.generate_key()
 cipher_suite = Fernet(encryption_key)
 
 # Kết nối SQL Server
-conn = pyodbc.connect("Driver={SQL Server}; Server=LAPTOP-IQ2M6252\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
+conn = pyodbc.connect("Driver={SQL Server}; Server=DESKTOP-T7J02M7\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -54,24 +59,22 @@ def handle_exception(e):
 @app.route('/')
 def index():
     cursor = conn.cursor()
-    cursor.execute("SELECT image_id, filename, owner, is_sold FROM Images WHERE is_sold = 0")
+    cursor.execute("SELECT image_id, filename, owner, price, is_sold FROM Images WHERE is_sold = 0")
     images = cursor.fetchall()
 
-    # Thay đổi filename thành _display.png nếu có
+    # Update filenames for display
     updated_images = []
     for image in images:
-        image_id, filename, owner, is_sold = image
+        image_id, filename, owner, price, is_sold = image
 
-        # Thay đổi filename từ _watermarked.png thành _display.png
         if '_watermarked.png' in filename:
             display_filename = filename.replace('_watermarked.png', '_display.png')
         else:
-            display_filename = filename  # Nếu không phải _watermarked.png, giữ nguyên
+            display_filename = filename
 
-        updated_images.append((image_id, display_filename, owner, is_sold))
+        updated_images.append((image_id, display_filename, owner, price, is_sold))
 
     return render_template('index.html', images=updated_images)
-
 
 def generate_verification_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -205,78 +208,84 @@ def generate_random_text(length=6):
     letters_and_digits = string.ascii_letters + string.digits
     return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
+
 @app.route('/admin/upload', methods=['GET', 'POST'])
 def admin_upload():
     if 'username' not in session or session['role'] != 'admin':
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Upload file ảnh và logo
-        file = request.files['file']
-        logo = request.files.get('logo')  # Logo là tùy chọn
-        owner = request.form['owner']
-        watermark_type = 'text'  # 'logo' hoặc 'text'
+        try:
+            # Upload file ảnh và logo
+            file = request.files['file']
+            logo = request.files.get('logo')  # Logo là tùy chọn
+            owner = request.form['owner']
+            price = request.form['price']  # Get the price from the form
 
-        # Lưu ảnh gốc
-        original_filename = secure_filename(file.filename)
-        base_name = generate_random_text(10)  # Tạo tên file ngẫu nhiên
-        png_filename = f"{base_name}.png"
-        png_filepath = os.path.join(UPLOAD_FOLDER, png_filename)
+            # Generate a safe and unique filename
+            original_filename = secure_filename(file.filename)
+            base_name = original_filename.rsplit('.', 1)[0]
+            extension = original_filename.rsplit('.', 1)[-1]
+            unique_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
-        original_image = Image.open(file).convert("RGB")
-        original_image.save(png_filepath, format='PNG')
+            # Truncate base_name if too long (e.g., max 50 characters for safety)
+            if len(base_name) > 50:
+                base_name = base_name[:50]
 
-        # Lưu file logo nếu có
-        if logo:
-            logo_filename = secure_filename(logo.filename)
-            logo_base_name = generate_random_text(10)  # Tạo tên file ngẫu nhiên cho logo
-            logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_base_name}.png")
-            logo_image = Image.open(logo).convert("RGBA")
-            logo_image.save(logo_filepath, format='PNG')
-        else:
-            logo_filepath = None
+            # Generate filenames with unique suffix
+            watermarked_filename = f"{base_name}_{unique_suffix}_watermarked.{extension}"
+            display_filename = f"{base_name}_{unique_suffix}_display.{extension}"
+            watermarked_filepath = os.path.join(UPLOAD_FOLDER, watermarked_filename)
+            display_filepath = os.path.join(UPLOAD_FOLDER, display_filename)
 
-        # Nhúng watermark ẩn
-        if logo_filepath:
-            watermark_image = Image.open(logo_filepath).convert("1")
-        else:
-            watermark_image = Image.new("1", original_image.size, color=0)
+            # Save original file as PNG
+            png_filepath = os.path.join(UPLOAD_FOLDER, f"{base_name}_{unique_suffix}.png")
+            original_image = Image.open(file).convert("RGB")
+            original_image.save(png_filepath, format='PNG')
 
-        watermarked_image = embed_watermark(original_image, watermark_image)
-        watermarked_filename = f"{base_name}_watermarked.png"
-        watermarked_filepath = os.path.join(UPLOAD_FOLDER, watermarked_filename)
-        watermarked_image.save(watermarked_filepath, format='PNG')
+            # Save logo if provided
+            if logo:
+                logo_filename = secure_filename(logo.filename)
+                logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_filename.rsplit('.', 1)[0]}_{unique_suffix}.png")
+                logo_image = Image.open(logo).convert("RGBA")
+                logo_image.save(logo_filepath, format='PNG')
+            else:
+                logo_filepath = None
 
-        # Chèn logo hoặc văn bản hiển thị
-        if watermark_type == 'text' and owner:
-            display_image = add_text_watermark(png_filepath, owner)
-        else:
-            display_image = add_text_watermark(png_filepath, 'PhotoStore')
+            # Create and save watermarked image
+            watermarked_image = embed_watermark(original_image, Image.new("1", original_image.size, color=0))
+            watermarked_image.save(watermarked_filepath, format='PNG')
 
-        display_filename = f"{base_name}_display.png"
-        display_filepath = os.path.join(UPLOAD_FOLDER, display_filename)
-        display_image.save(display_filepath, format='PNG')
+            # Create and save display image
+            display_image = add_text_watermark(png_filepath, owner if owner else "PhotoStore")
+            display_image.save(display_filepath, format='PNG')
 
-        # Tạo khóa giải mã
-        decryption_key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+            # Generate decryption key
+            decryption_key = generate_unique_key()
 
-        # Lưu thông tin vào database
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO Images (filename, owner, decryption_key, filepath, original_filepath) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            watermarked_filename,
-            owner,  
-            decryption_key,
-            watermarked_filepath,
-            png_filepath
-        ))
-        conn.commit()
+            # Insert metadata into the database
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO Images (filename, owner, decryption_key, filepath, original_filepath, price, is_sold)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
+            """, (
+                watermarked_filename,
+                owner,
+                decryption_key,
+                watermarked_filepath,
+                png_filepath,
+                price
+            ))
+            conn.commit()
 
-        return redirect(url_for('index'))
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            app.logger.error(f"Error during upload: {str(e)}")
+            return render_template('upload.html', error="Error during upload. Please try again.")
 
     return render_template('upload.html')
+
 
 @app.route('/extract_logo', methods=['GET', 'POST'])
 def extract_logo():
@@ -307,37 +316,37 @@ def extract_logo():
 
 @app.route('/detail/<int:image_id>')
 def detail(image_id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
     cursor = conn.cursor()
-    cursor.execute("SELECT image_id, filename, owner FROM Images WHERE image_id = ?", (image_id,))
+    cursor.execute("SELECT image_id, filename, owner, price FROM Images WHERE image_id = ?", (image_id,))
     image = cursor.fetchone()
 
     if image:
-        image_id, filename, owner = image
+        image_id, filename, owner, price = image
 
-        # Thay đổi tên file để hiển thị file _display.png
-        if '_watermarked.png' in filename:
-            display_filename = filename.replace('_watermarked.png', '_display.png')
+        # Update filename for display
+        if '_watermarked' in filename:
+            display_filename = filename.replace('_watermarked', '_display')
         else:
             display_filename = filename
 
-        # Truyền lại tên file _display.png thay vì tên file gốc
-        image = (image_id, display_filename, owner)
+        # Pass all data to the template
+        image = (image_id, display_filename, owner, price)
 
     return render_template('detail.html', image=image)
-
-
 
 @app.route('/purchase/<int:image_id>', methods=['GET', 'POST'])
 def purchase(image_id):
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    # Lấy user_id của người dùng hiện tại
     cursor = conn.cursor()
+
+    # Lấy user_id của người dùng hiện tại
     cursor.execute("SELECT user_id FROM Users WHERE username = ?", (session['username'],))
-    user_id = cursor.fetchone()[0]
+    user_data = cursor.fetchone()
+    if not user_data:
+        return "Lỗi: Không tìm thấy người dùng!", 404
+    user_id = user_data[0]
 
     # Kiểm tra nếu người dùng đã mua ảnh này
     cursor.execute("SELECT * FROM Purchases WHERE user_id = ? AND image_id = ?", (user_id, image_id))
@@ -345,23 +354,37 @@ def purchase(image_id):
     if purchase:
         return redirect(url_for('library'))  # Nếu đã mua, chuyển hướng về thư viện
 
-    # Lấy key giải mã từ bảng Images
-    cursor.execute("SELECT decryption_key FROM Images WHERE image_id = ?", (image_id,))
-    decryption_key_result = cursor.fetchone()
+    # Lấy thông tin ảnh từ cơ sở dữ liệu
+    cursor.execute("""
+        SELECT Images.image_id, Images.price, Images.owner, Users.username, Users.email, Images.decryption_key
+        FROM Images 
+        JOIN Users ON Images.owner = Users.username
+        WHERE Images.image_id = ?
+    """, (image_id,))
+    image_data = cursor.fetchone()
 
-    # Kiểm tra xem có key giải mã hay không
-    if decryption_key_result:
-        decryption_key = decryption_key_result[0]
+    if not image_data:
+        return "Không tìm thấy ảnh!", 404
 
-        # Lưu vào bảng Purchases với key giải mã
-        cursor.execute("INSERT INTO Purchases (user_id, image_id, decryption_key) VALUES (?, ?, ?)", (user_id, image_id, decryption_key))
+    # Lấy thông tin ảnh và chủ tài khoản
+    image_id, price, owner, account_name, email, decryption_key = image_data
+
+    # Xử lý POST (người dùng thanh toán)
+    if request.method == 'POST':
+        # Lưu thông tin giao dịch
+        cursor.execute("INSERT INTO Purchases (user_id, image_id, decryption_key) VALUES (?, ?, ?)",
+                       (user_id, image_id, decryption_key))
         conn.commit()
-
-        # Trả về key giải mã cho người dùng
         return render_template('purchase_key.html', decryption_key=decryption_key)
-    else:
-        return "Error: No decryption key found for this image."
 
+    # Tạo Quicklink VietQR
+    BANK_ID = "Vietinbank"  # Mã ngân hàng của chủ tài khoản
+    account_no = "108872802698"  # Số tài khoản của chủ ảnh
+    template = "print"
+    description = f"Thanh toán ảnh ID {image_id}"  # Nội dung giao dịch
+    quicklink = f"https://img.vietqr.io/image/{BANK_ID}-{account_no}-{template}.png?amount={price}&addInfo={description}&accountName={account_name}"
+
+    return render_template('purchase.html', quicklink=quicklink, price=price, owner=owner, description=description)
 
 @app.route('/library')
 def library():
@@ -580,6 +603,42 @@ def search():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/generate_qr/<int:image_id>')
+def generate_qr(image_id):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT Images.image_id, Images.price, Images.owner 
+        FROM Images 
+        WHERE Images.image_id = ?
+    """, (image_id,))
+    image_data = cursor.fetchone()
+
+    if not image_data:
+        return "Không tìm thấy ảnh!", 404
+
+    image_id, price, owner = image_data
+
+    # Tạo URL Quicklink VietQR
+    BANK_ID = "MB"  # Thay thế mã ngân hàng thực tế
+    account_no = "8600128022002"  # Số tài khoản thực tế
+    template = "print"
+    description = f"Thanh toán ảnh ID {image_id}"
+
+    quicklink = f"https://img.vietqr.io/image/{BANK_ID}-{account_no}-{template}.png?amount={price}&addInfo={description}&accountName={owner}"
+
+    # Tạo yêu cầu GET đến VietQR để lấy hình ảnh mã QR
+    try:
+        response = requests.get(quicklink)
+        if response.status_code == 200:
+            return response.content, 200, {'Content-Type': 'image/png'}
+        else:
+            app.logger.error(f"Lỗi tạo mã QR: {response.text}")
+            return "Không thể tạo mã QR!", 400
+    except Exception as e:
+        app.logger.error(f"Lỗi kết nối với VietQR: {e}")
+        return "Không thể tạo mã QR!", 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
