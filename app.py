@@ -219,7 +219,7 @@ def admin_upload():
 
         # Lưu ảnh gốc
         original_filename = secure_filename(file.filename)
-        base_name = original_filename.rsplit('.', 1)[0]
+        base_name = generate_random_text(10)  # Tạo tên file ngẫu nhiên
         png_filename = f"{base_name}.png"
         png_filepath = os.path.join(UPLOAD_FOLDER, png_filename)
 
@@ -229,7 +229,8 @@ def admin_upload():
         # Lưu file logo nếu có
         if logo:
             logo_filename = secure_filename(logo.filename)
-            logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_filename.rsplit('.', 1)[0]}.png")
+            logo_base_name = generate_random_text(10)  # Tạo tên file ngẫu nhiên cho logo
+            logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_base_name}.png")
             logo_image = Image.open(logo).convert("RGBA")
             logo_image.save(logo_filepath, format='PNG')
         else:
@@ -266,7 +267,7 @@ def admin_upload():
             VALUES (?, ?, ?, ?, ?)
         """, (
             watermarked_filename,
-            owner,
+            owner,  
             decryption_key,
             watermarked_filepath,
             png_filepath
@@ -306,6 +307,8 @@ def extract_logo():
 
 @app.route('/detail/<int:image_id>')
 def detail(image_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
     cursor = conn.cursor()
     cursor.execute("SELECT image_id, filename, owner FROM Images WHERE image_id = ?", (image_id,))
     image = cursor.fetchone()
