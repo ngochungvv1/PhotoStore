@@ -32,7 +32,7 @@ encryption_key = Fernet.generate_key()
 cipher_suite = Fernet(encryption_key)
 
 # Kết nối SQL Server
-conn = pyodbc.connect("Driver={SQL Server}; Server=DESKTOP-T7J02M7\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
+conn = pyodbc.connect("Driver={SQL Server}; Server=LAPTOP-IQ2M6252\SQLEXPRESS; Database=PhotoStore; Trusted_Connection=yes;")
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -67,8 +67,8 @@ def index():
     for image in images:
         image_id, filename, owner, price, is_sold = image
 
-        if '_watermarked.png' in filename:
-            display_filename = filename.replace('_watermarked.png', '_display.png')
+        if '_w.png' in filename:
+            display_filename = filename.replace('_w.png', '_display.png')
         else:
             display_filename = filename
 
@@ -222,31 +222,32 @@ def admin_upload():
             owner = request.form['owner']
             price = request.form['price']  # Get the price from the form
 
+            base_name = generate_random_text(10)
             # Generate a safe and unique filename
-            original_filename = secure_filename(file.filename)
-            base_name = original_filename.rsplit('.', 1)[0]
-            extension = original_filename.rsplit('.', 1)[-1]
-            unique_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+            # original_filename = secure_filename(file.filename)
+            # base_name = original_filename.rsplit('.', 1)[0]
+            # extension = original_filename.rsplit('.', 1)[-1]
+            # unique_suffix = generate_random_text(10)
 
             # Truncate base_name if too long (e.g., max 50 characters for safety)
-            if len(base_name) > 50:
-                base_name = base_name[:50]
+            # if len(base_name) > 50:
+            #     base_name = base_name[:50]
 
             # Generate filenames with unique suffix
-            watermarked_filename = f"{base_name}_{unique_suffix}_watermarked.{extension}"
-            display_filename = f"{base_name}_{unique_suffix}_display.{extension}"
+            watermarked_filename = f"{base_name}_w.png"
+            display_filename = f"{base_name}_display.png"
             watermarked_filepath = os.path.join(UPLOAD_FOLDER, watermarked_filename)
             display_filepath = os.path.join(UPLOAD_FOLDER, display_filename)
 
             # Save original file as PNG
-            png_filepath = os.path.join(UPLOAD_FOLDER, f"{base_name}_{unique_suffix}.png")
+            png_filepath = os.path.join(UPLOAD_FOLDER, f"{base_name}.png")
             original_image = Image.open(file).convert("RGB")
             original_image.save(png_filepath, format='PNG')
 
             # Save logo if provided
             if logo:
                 logo_filename = secure_filename(logo.filename)
-                logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_filename.rsplit('.', 1)[0]}_{unique_suffix}.png")
+                logo_filepath = os.path.join(UPLOAD_FOLDER, f"{logo_filename.rsplit('.', 1)[0]}.png")
                 logo_image = Image.open(logo).convert("RGBA")
                 logo_image.save(logo_filepath, format='PNG')
             else:
@@ -324,8 +325,8 @@ def detail(image_id):
         image_id, filename, owner, price = image
 
         # Update filename for display
-        if '_watermarked' in filename:
-            display_filename = filename.replace('_watermarked', '_display')
+        if '_w' in filename:
+            display_filename = filename.replace('_w', '_display')
         else:
             display_filename = filename
 
@@ -341,50 +342,25 @@ def purchase(image_id):
 
     cursor = conn.cursor()
 
-    # Lấy user_id của người dùng hiện tại
     cursor.execute("SELECT user_id FROM Users WHERE username = ?", (session['username'],))
-    user_data = cursor.fetchone()
-    if not user_data:
-        return "Lỗi: Không tìm thấy người dùng!", 404
-    user_id = user_data[0]
+    user_id = cursor.fetchone()[0]
 
-    # Kiểm tra nếu người dùng đã mua ảnh này
     cursor.execute("SELECT * FROM Purchases WHERE user_id = ? AND image_id = ?", (user_id, image_id))
     purchase = cursor.fetchone()
     if purchase:
-        return redirect(url_for('library'))  # Nếu đã mua, chuyển hướng về thư viện
+        return redirect(url_for('library')) 
+    
+    cursor.execute("SELECT decryption_key FROM Images WHERE image_id = ?", (image_id,))
+    decryption_key_result = cursor.fetchone()
 
-    # Lấy thông tin ảnh từ cơ sở dữ liệu
-    cursor.execute("""
-        SELECT Images.image_id, Images.price, Images.owner, Users.username, Users.email, Images.decryption_key
-        FROM Images 
-        JOIN Users ON Images.owner = Users.username
-        WHERE Images.image_id = ?
-    """, (image_id,))
-    image_data = cursor.fetchone()
-
-    if not image_data:
-        return "Không tìm thấy ảnh!", 404
-
-    # Lấy thông tin ảnh và chủ tài khoản
-    image_id, price, owner, account_name, email, decryption_key = image_data
-
-    # Xử lý POST (người dùng thanh toán)
-    if request.method == 'POST':
-        # Lưu thông tin giao dịch
-        cursor.execute("INSERT INTO Purchases (user_id, image_id, decryption_key) VALUES (?, ?, ?)",
-                       (user_id, image_id, decryption_key))
+    if decryption_key_result:
+        decryption_key = decryption_key_result[0]
+        cursor.execute("INSERT INTO Purchases (user_id, image_id, decryption_key) VALUES (?, ?, ?)", (user_id, image_id, decryption_key))
         conn.commit()
+
         return render_template('purchase_key.html', decryption_key=decryption_key)
-
-    # Tạo Quicklink VietQR
-    BANK_ID = "Vietinbank"  # Mã ngân hàng của chủ tài khoản
-    account_no = "108872802698"  # Số tài khoản của chủ ảnh
-    template = "print"
-    description = f"Thanh toán ảnh ID {image_id}"  # Nội dung giao dịch
-    quicklink = f"https://img.vietqr.io/image/{BANK_ID}-{account_no}-{template}.png?amount={price}&addInfo={description}&accountName={account_name}"
-
-    return render_template('purchase.html', quicklink=quicklink, price=price, owner=owner, description=description)
+    else:
+        return "Error: No decryption key found for this image."
 
 @app.route('/library')
 def library():
@@ -409,8 +385,8 @@ def library():
         filename, decryption_key = image
 
         # Thay đổi filename từ _watermarked.png thành _display.png
-        if '_watermarked.png' in filename:
-            display_filename = filename.replace('_watermarked.png', '_display.png')
+        if '_w.png' in filename:
+            display_filename = filename.replace('_w.png', '_display.png')
         else:
             display_filename = filename  # Nếu không phải _watermarked.png, giữ nguyên
 
@@ -606,9 +582,12 @@ def search():
 
 @app.route('/generate_qr/<int:image_id>')
 def generate_qr(image_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    username = session['username']
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT Images.image_id, Images.price, Images.owner 
+        SELECT Images.image_id, Images.price, Images.owner, Images.filename 
         FROM Images 
         WHERE Images.image_id = ?
     """, (image_id,))
@@ -617,15 +596,18 @@ def generate_qr(image_id):
     if not image_data:
         return "Không tìm thấy ảnh!", 404
 
-    image_id, price, owner = image_data
+    image_id, price, owner, filename = image_data
+
+    image_name = filename.split('_')[0]
+    print(image_name)
 
     # Tạo URL Quicklink VietQR
     BANK_ID = "MB"  # Thay thế mã ngân hàng thực tế
     account_no = "8600128022002"  # Số tài khoản thực tế
     template = "print"
-    description = f"Thanh toán ảnh ID {image_id}"
+    description = f"Thanh toan anh {image_name} cho {username}"
 
-    quicklink = f"https://img.vietqr.io/image/{BANK_ID}-{account_no}-{template}.png?amount={price}&addInfo={description}&accountName={owner}"
+    quicklink = f"https://img.vietqr.io/image/{BANK_ID}-{account_no}-{template}.png?amount={price}&addInfo={description}&accountName={'NguyenNgocHung'}"
 
     # Tạo yêu cầu GET đến VietQR để lấy hình ảnh mã QR
     try:

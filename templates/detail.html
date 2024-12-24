@@ -129,7 +129,7 @@
     <button id="purchase-btn" class="purchase-btn">Mua ngay</button>
 <div id="qr-container" style="margin-top: 20px; display: none;">
     <h3>Mã QR thanh toán:</h3>
-    <img id="qr-code" src="" alt="QR Code" style="width: 200px; height: 200px;">
+    <img id="qr-code" src="" alt="QR Code" style="width: 300px; height: 400px;">
 </div>
 
 </div>
@@ -140,26 +140,56 @@
 
 <script>
     document.getElementById('purchase-btn').addEventListener('click', function () {
-        const imageId = {{ image[0] }}; // ID của ảnh từ Flask
-        const qrContainer = document.getElementById('qr-container');
-        const qrCodeImg = document.getElementById('qr-code');
+        {% if session.get('logged_in') %}
+            const imageId = {{ image[0] }};
+            const imageFilename = "{{ image[1] }}";
+            const image_name = imageFilename.split('_')[0];
+            const imagePrice = {{ image[3] }};
+            const username = "{{ session.get('username') }}";
+            const qrContainer = document.getElementById('qr-container');
+            const qrCodeImg = document.getElementById('qr-code');
 
-        // Gửi yêu cầu tới API để tạo mã QR
-        fetch(`/generate_qr/${imageId}`)
-            .then(response => {
-                if (response.ok) {
-                    return response.blob();
-                } else {
+            fetch(`/generate_qr/${imageId}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
                     throw new Error('Không thể tạo mã QR!');
-                }
-            })
-            .then(blob => {
-                const url = URL.createObjectURL(blob);
-                qrCodeImg.src = url;
-                qrContainer.style.display = 'block'; // Hiển thị khu vực mã QR
-            })
-            .catch(error => {
-                alert(error.message);
-            });
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    qrCodeImg.src = url;
+                    qrContainer.style.display = 'block';
+                    
+                    // Start checking payment status
+                    setInterval(() => {
+                        checkPaid(imagePrice, image_name, username, imageId);
+                    }, 5000);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        {% else %}
+            window.location.href = '/login';
+        {% endif %}
     });
-</script>
+
+    async function checkPaid(price, name, username, id) {
+        try {
+            const response = await fetch(
+                "https://script.google.com/macros/s/AKfycbwmpewRheg7DpsgbtygHQNevxgGHrgaCMgSA-Lgqf7371blD3oQ0hlu3l16Wp3aEIWqJw/exec"
+            );
+            const data = await response.json();
+            const lastPaid = data.data[data.data.length - 1];
+            const lastPrice = lastPaid['Giá trị'];
+            const lastDesc = lastPaid['Mô tả'];
+            const description = `Thanh toananh ${name} cho ${username}`
+            console.log(lastPaid);
+            if (parseInt(lastPrice) == parseInt(price) && lastDesc.includes(description)) {
+                window.location.href = `/purchase/${id}`;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    </script>
